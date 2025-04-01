@@ -5,84 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link rel="stylesheet" href="/css/styles.css">
-
 </head>
 <body>
     <h1><%= title %></h1>
-    <form id="date-form">
+    <form id="date-form" method="GET" action="/">
         <label for="start-date">Data Inicial:</label>
-        <input type="date" id="start-date" name="start-date" value="<%= dataInicio %>" required>
+        <input type="date" id="start-date" name="dataInicio" value="<%= dataInicio.split('T')[0] %>" required>
         <label for="end-date">Data Final:</label>
-        <input type="date" id="end-date" name="end-date" value="<%= dataFim %>" required>
+        <input type="date" id="end-date" name="dataFim" value="<%= dataFim.split('T')[0] %>" required>
         <button type="submit">Buscar</button>
     </form>
-    <div class="w-100 d-flex-center">
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Data</th>
-                    <th>ID Funcionário</th>
-                    <th>Memória Entrada 1</th>
-                    <th>Memória Saída 1</th>
-                    <th>Memória Entrada 2</th>
-                    <th>Memória Saída 2</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% if (batidas && batidas.length > 0) { %>
-                    <% 
-                        // Ordenar as batidas por data
-                        batidas.sort((a, b) => new Date(a.Data) - new Date(b.Data));
-                    %>
-                    <% batidas.forEach(batida => { %>
+
+    <% if (batidas && batidas.length > 0) { %>
+        <% 
+            // Agrupar as batidas por dia
+            const batidasPorDia = batidas.reduce((acc, batida) => {
+                const dataFormatada = new Date(batida.Data).toLocaleDateString('pt-BR');
+                if (!acc[dataFormatada]) {
+                    acc[dataFormatada] = [];
+                }
+                acc[dataFormatada].push(batida);
+                return acc;
+            }, {});
+        %>
+
+        <% Object.keys(batidasPorDia).forEach(dia => { %>
+            <h2>Batidas do dia <%= dia %></h2>
+            <div class="w-100 d-flex-center">
+                <table border="1">
+                    <thead>
                         <tr>
-                            <td><%= new Date(batida.Data).toLocaleDateString('pt-BR') %></td>
-                            <td><%= batida.NomeFuncionario %></td>
-                            <td><%= batida.FonteDadosEntrada1?.Hora || 'N/A' %></td>
-                            <td><%= batida.FonteDadosSaida1?.Hora || 'N/A' %></td>
-                            <td><%= batida.FonteDadosEntrada2?.Hora || 'N/A' %></td>
-                            <td><%= batida.FonteDadosSaida2?.Hora || 'N/A' %></td>
+                            <th>ID Funcionário</th>
+                            <th>Nome Funcionário</th>
+                            <th>Entrada 1</th>
+                            <th>Saída 1</th>
+                            <th>Entrada 2</th>
+                            <th>Saída 2</th>
                         </tr>
-                    <% }) %>
-                <% } else { %>
-                    <tr>
-                        <td colspan="6">Nenhuma batida encontrada.</td>
-                    </tr>
-                <% } %>
-            </tbody>
-        </table>
-    </div>
-    <script>
-        document.getElementById('date-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const startDate = document.getElementById('start-date').value;
-            const endDate = document.getElementById('end-date').value;
-
-            try {
-                const response = await fetch(`/batidas?dataInicio=${startDate}&dataFim=${endDate}`);
-                const data = await response.json();
-
-                console.log('Dados das batidas:', data);
-
-                // Ordenar os dados por data
-                data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
-
-                const pointsContainer = document.querySelector('tbody');
-                pointsContainer.innerHTML = data.map((batida) => `
-                    <tr>
-                        <td>${new Date(batida.Data).toLocaleDateString('pt-BR')}</td>
-                        <td>${batida.FuncionarioId}</td>
-                        <td>${batida.MemoriaEntrada1 || 'N/A'}</td>
-                        <td>${batida.MemoriaSaida1 || 'N/A'}</td>
-                        <td>${batida.MemoriaEntrada2 || 'N/A'}</td>
-                        <td>${batida.MemoriaSaida2 || 'N/A'}</td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Erro ao buscar batidas:', error);
-                alert('Erro ao buscar batidas. Verifique os logs.');
-            }
-        });
-    </script>
+                    </thead>
+                    <tbody>
+                        <% batidasPorDia[dia].forEach(batida => { %>
+                            <tr>
+                                <td><%= new Date(batida.Data).toLocaleDateString('pt-BR') %></td>
+                                <td><%= batida.NomeFuncionario %></td>
+                                <td><%= batida.FonteDadosEntrada1?.Hora || 'N/A' %></td>
+                                <td><%= batida.FonteDadosSaida1?.Hora || 'N/A' %></td>
+                                <td><%= batida.FonteDadosEntrada2?.Hora || 'N/A' %></td>
+                                <td><%= batida.FonteDadosSaida2?.Hora || 'N/A' %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% }) %>
+    <% } else { %>
+        <p>Nenhuma batida encontrada.</p>
+    <% } %>
 </body>
 </html>

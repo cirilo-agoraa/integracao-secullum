@@ -39,19 +39,22 @@ app.use('/auth', authRoutes);
 const getDates = () => {
     const today = new Date();
     const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 8);
+    yesterday.setDate(today.getDate() - 1);
 
     const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
     return {
         dataInicio: formatDate(yesterday),
-        dataFim: formatDate(today),
+        dataFim: formatDate(yesterday),
     };
 };
 
 // Rota para renderizar a página inicial com as batidas
+// Rota para renderizar a página inicial com as batidas
 app.get('/', async (req, res) => {
-    const { dataInicio, dataFim } = getDates();
+    // Obter os parâmetros de data da URL ou usar os valores padrão
+    const dataInicio = req.query.dataInicio as string || getDates().dataInicio;
+    const dataFim = req.query.dataFim as string || getDates().dataFim;
 
     try {
         // Realizar login para obter o token
@@ -79,17 +82,17 @@ app.get('/', async (req, res) => {
             },
         });
 
+        // Fazer a chamada para a API de funcionários
         const functionariosResponse = await axios.get('https://pontowebintegracaoexterna.secullum.com.br/IntegracaoExterna/Funcionarios', {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
-            params: {
-
-            }
         });
+
         const batidas = batidasResponse.data;
         const funcionarios = functionariosResponse.data;
-        
+
+        // Cruzar os dados de batidas com os funcionários
         const batidasComNomes = batidas.map((batida: any) => {
             const funcionario = funcionarios.find((f: any) => f.Id === batida.FuncionarioId);
             return {
@@ -97,9 +100,31 @@ app.get('/', async (req, res) => {
                 NomeFuncionario: funcionario ? funcionario.Nome : 'Desconhecido',
             };
         });
-        // console.log('Batidas:', batidasResponse); // Logar as batidas recebidas
-        // console.log('Funcionarios:', functionariosResponse); // Logar os funcionarios recebidos
-        // console.log(batidasResponse.data);
+
+        batidasComNomes.sort((a: any, b: any) => {
+            const dateA = new Date(a.Data).getTime();
+            const dateB = new Date(b.Data).getTime();
+
+            if (dateA !== dateB) {
+                return dateA - dateB; // Ordenar por data
+            }
+
+            return a.NomeFuncionario.localeCompare(b.NomeFuncionario); // Ordenar por nome
+        });
+
+        // Ordenar as batidas por data e nome
+        batidasComNomes.sort((a: any, b: any) => {
+            const dateA = new Date(a.Data).getTime();
+            const dateB = new Date(b.Data).getTime();
+
+            if (dateA !== dateB) {
+                return dateA - dateB; // Ordenar por data
+            }
+
+            return a.NomeFuncionario.localeCompare(b.NomeFuncionario); // Ordenar por nome
+        });
+
+        // Renderizar a página com os dados
         res.render('index', {
             title: 'Visualizar Batidas',
             batidas: batidasComNomes,
@@ -107,8 +132,8 @@ app.get('/', async (req, res) => {
             dataFim,    // Passando dataFim para o template
         });
     } catch (error: any) {
-        console.error('Erro ao buscar batidas:', error.response?.data || error.message);
-        res.status(500).send('Erro ao buscar batidas.');
+        console.error('Erro ao buscar batidas ou funcionários:', error.response?.data || error.message);
+        res.status(500).send('Erro ao buscar batidas ou funcionários.');
     }
 });
 
