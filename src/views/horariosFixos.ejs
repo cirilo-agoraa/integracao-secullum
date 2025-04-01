@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+
+</head>
+<body>
+    <h1><%= title %></h1>
+    <form id="date-form">
+        <label for="start-date">Data Inicial:</label>
+        <input type="date" id="start-date" name="start-date" value="<%= dataInicio %>" required>
+        <label for="end-date">Data Final:</label>
+        <input type="date" id="end-date" name="end-date" value="<%= dataFim %>" required>
+        <button type="submit">Buscar</button>
+    </form>
+    <div class="w-100 d-flex-center">
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>ID Funcionário</th>
+                    <th>Memória Entrada 1</th>
+                    <th>Memória Saída 1</th>
+                    <th>Memória Entrada 2</th>
+                    <th>Memória Saída 2</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (batidas && batidas.length > 0) { %>
+                    <% 
+                        // Ordenar as batidas por data
+                        batidas.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+                    %>
+                    <% batidas.forEach(batida => { %>
+                        <tr>
+                            <td><%= new Date(batida.Data).toLocaleDateString('pt-BR') %></td>
+                            <td><%= batida.NomeFuncionario %></td>
+                            <td><%= batida.MemoriaEntrada1 || 'N/A' %></td>
+                            <td><%= batida.MemoriaSaida1 || 'N/A' %></td>
+                            <td><%= batida.MemoriaEntrada2 || 'N/A' %></td>
+                            <td><%= batida.MemoriaSaida2 || 'N/A' %></td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="6">Nenhuma batida encontrada.</td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        document.getElementById('date-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+
+            try {
+                const response = await fetch(`/batidas?dataInicio=${startDate}&dataFim=${endDate}`);
+                const data = await response.json();
+
+                console.log('Dados das batidas:', data);
+
+                // Ordenar os dados por data
+                data.sort((a, b) => new Date(a.Data) - new Date(b.Data));
+
+                const pointsContainer = document.querySelector('tbody');
+                pointsContainer.innerHTML = data.map((batida) => `
+                    <tr>
+                        <td>${new Date(batida.Data).toLocaleDateString('pt-BR')}</td>
+                        <td>${batida.FuncionarioId}</td>
+                        <td>${batida.MemoriaEntrada1 || 'N/A'}</td>
+                        <td>${batida.MemoriaSaida1 || 'N/A'}</td>
+                        <td>${batida.MemoriaEntrada2 || 'N/A'}</td>
+                        <td>${batida.MemoriaSaida2 || 'N/A'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Erro ao buscar batidas:', error);
+                alert('Erro ao buscar batidas. Verifique os logs.');
+            }
+        });
+    </script>
+</body>
+</html>
