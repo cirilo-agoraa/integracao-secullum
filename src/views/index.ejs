@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
     <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .atrasado {
+            background-color: yellow;
+        }
+    </style>
 </head>
 <body>
     <h1><%= title %></h1>
@@ -35,7 +40,6 @@
                 <table border="1">
                     <thead>
                         <tr>
-                            <th>ID Funcionário</th>
                             <th>Nome Funcionário</th>
                             <th>Entrada 1</th>
                             <th>Saída 1</th>
@@ -45,8 +49,19 @@
                     </thead>
                     <tbody>
                         <% batidasPorDia[dia].forEach(batida => { %>
-                            <tr>
-                                <td><%= new Date(batida.Data).toLocaleDateString('pt-BR') %></td>
+                            <% 
+                                // Separar os intervalos de horários do campo Descricao
+                                const horariosSeparados = batida.horarios?.match(/(\d{2}:\d{2})/g) || [];
+                                const entrada1 = horariosSeparados?.[0] || 'N/A';
+                                const saida1 = horariosSeparados?.[1] || 'N/A';
+                                const entrada2 = horariosSeparados?.[2] || 'N/A';
+                                const saida2 = horariosSeparados?.[3] || 'N/A';
+                                console.log(entrada1)
+
+                                // Comparar horários reais com horários esperados
+  
+                            %>
+                            <tr class="<%= atrasado ? 'atrasado' : '' %>">
                                 <td><%= batida.NomeFuncionario %></td>
                                 <td><%= batida.FonteDadosEntrada1?.Hora || 'N/A' %></td>
                                 <td><%= batida.FonteDadosSaida1?.Hora || 'N/A' %></td>

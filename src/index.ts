@@ -98,6 +98,8 @@ app.get('/', async (req, res) => {
             return {
                 ...batida,
                 NomeFuncionario: funcionario ? funcionario.Nome : 'Desconhecido',
+                horarios: funcionario ? funcionario.Horario.Descricao : 'Desconhecido',
+
             };
         });
 
@@ -123,7 +125,7 @@ app.get('/', async (req, res) => {
 
             return a.NomeFuncionario.localeCompare(b.NomeFuncionario); // Ordenar por nome
         });
-
+        // console.log(batidasComNomes);
         // Renderizar a página com os dados
         res.render('index', {
             title: 'Visualizar Batidas',
@@ -223,9 +225,6 @@ app.get('/fixos', async (req, res) => {
                 NomeFuncionario: funcionario ? funcionario.Nome : 'Desconhecido',
             };
         });
-        // console.log('Batidas:', batidasResponse); // Logar as batidas recebidas
-        // console.log('Funcionarios:', functionariosResponse); // Logar os funcionarios recebidos
-        // console.log(batidasResponse.data);
         res.render('index', {
             title: 'Visualizar Batidas',
             batidas: batidasComNomes,
@@ -268,6 +267,37 @@ app.get('/funcionarios', async (req, res) => {
         res.status(500).json({ error: 'Erro ao buscar funcionários.' });
     }
 });
+
+app.get('/horarios', async (req, res) => {
+    try {
+        // Realizar login para obter o token
+        const loginResponse = await axios.post(API_URL_AUTH, qs.stringify({
+            username: API_USERNAME,
+            password: API_PASSWORD,
+            client_id: API_CLIENT_ID,
+            grant_type: GRANT_TYPE,
+        }), {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+        });
+
+        const token = loginResponse.data.access_token;
+
+        // Fazer a chamada para a API de funcionários
+        const horarios = await axios.get('https://pontowebintegracaoexterna.secullum.com.br/IntegracaoExterna/Funcionarios', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        res.json(horarios.data); // Retornar os dados de funcionários como JSON
+    } catch (error: any) {
+        console.error('Erro ao buscar funcionários:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Erro ao buscar funcionários.' });
+    }
+});
+
 
 // Iniciar o servidor
 app.listen(PORT, () => {
